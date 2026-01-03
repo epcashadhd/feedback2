@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>IQ 分數視覺化工具 (iOS版)</title>
+    <style>
+        /* iOS & Mobile Friendly 離線版樣式表 */
+
+        :root {
+            --bg-color: #f8fafc;
+            --text-primary: #334155;
+            --text-secondary: #64748b;
+            --white: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            
+            /* 顏色變數 */
+            --col-fsiq: #ef4444;
+            --col-vci: #3b82f6;
+            --col-pri: #10b981;
+            --col-wmi: #f59e0b;
+            --col-psi: #8b5cf6;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            /* 防止某些瀏覽器的預設觸控行為 */
+            touch-action: manipulation; 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            /* 關鍵修改：鎖定高度為裝置視窗高度，禁止捲動 */
+            height: 100dvh; 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px; 
+        }
+
+        /* 頂部控制面板 */
+        .control-panel {
+            width: 100%;
+            max-width: 1152px;
+            background-color: var(--white);
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 8px;
+            z-index: 20;
+            flex-shrink: 0; /* 防止被壓縮 */
+        }
+
+        .panel-content {
+            display: flex;
+            flex-wrap: wrap; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+        }
+        
+        @media (min-width: 1024px) {
+            .panel-content {
+                justify-content: space-between;
+                gap: 10px;
+            }
+        }
+
+        .control-group, .btn-wrapper, .nav-btns, .divider {
+            flex-shrink: 0;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #f8fafc;
+            padding: 3px 6px 3px 3px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            transition: background-color 0.2s;
+        }
+        
+        .control-group.active-group {
+            background-color: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+
+        .color-selector {
+            width: 28px; 
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #e2e8f0;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .color-selector:active {
+            transform: scale(0.9);
+        }
+        
+        .active-group .color-selector {
+            box-shadow: 0 0 0 2px #94a3b8;
+            transform: scale(1.1);
+        }
+
+        .input-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: bold;
+            margin-bottom: 2px;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+            white-space: nowrap;
+            padding: 1px 2px;
+            line-height: 1.2;
+        }
+        
+        .input-label:active {
+            transform: scale(0.95);
+            color: var(--text-primary);
+        }
+
+        .custom-input {
+            width: 64px; 
+            height: 38px; 
+            padding: 2px;
+            border-radius: 8px;
+            font-size: 16px; 
+            font-weight: bold;
+            text-align: center;
+            background-color: var(--white);
+            border: 1px solid #e2e8f0;
+            outline: none;
+            transition: all 0.2s;
+            -webkit-appearance: none; 
+            appearance: none;
+        }
+
+        .hide-values .custom-input {
+            color: transparent !important;
+            text-shadow: 0 0 0 transparent !important;
+        }
+
+        @media (min-width: 768px) {
+            .custom-input { width: 68px; }
+        }
+
+        .custom-input:focus {
+            background-color: var(--white);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+            border-color: #cbd5e1;
+        }
+
+        .btn-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 38px; 
+        }
+
+        .btn {
+            height: 38px; 
+            padding: 0 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: background-color 0.2s;
+            border: none;
+            font-size: 13px; 
+            user-select: none;
+            -webkit-user-select: none;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .btn { font-size: 14px; padding: 0 14px; }
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-toggle {
+            border: 1px solid #cbd5e1;
+            background-color: var(--white);
+            color: #475569;
+        }
+        
+        .btn-toggle.active {
+            background-color: #1e293b;
+            color: white;
+            border-color: #1e293b;
+        }
+
+        .nav-btns {
+            display: flex;
+            gap: 2px;
+            background-color: #e2e8f0;
+            padding: 3px;
+            border-radius: 10px;
+            height: 38px;
+            align-items: center;
+        }
+
+        .btn-nav {
+            width: 36px;
+            height: 32px;
+            background-color: var(--white);
+            color: var(--text-primary);
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .btn-nav:active { background-color: #f1f5f9; }
+
+        .divider {
+            width: 1px;
+            height: 28px;
+            background-color: #e2e8f0;
+            margin: 0 4px;
+            display: none;
+        }
+        @media (min-width: 768px) {
+            .divider { display: block; }
+        }
+
+        /* 標題區域 */
+        .title-container {
+            margin-bottom: 6px; 
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s;
+            flex-shrink: 0;
+        }
+
+        .main-title {
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
+            transition: transform 0.3s;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .main-title { font-size: 20px; padding: 6px 20px; }
+        }
+
+        /* 圖表區域 - 自動填滿 */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 1152px;
+            /* 關鍵修改：使用 flex-grow: 1 自動填滿剩餘空間，移除固定高度 */
+            flex-grow: 1;
+            height: auto; 
+            min-height: 0; /* 允許縮小至內容以下 */
+            
+            background-color: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 0; /* 移除底部 margin，因為已經填滿了 */
+            display: flex;
+            flex-shrink: 1; /* 允許壓縮 */
+        }
+
+        .bg-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+
+        .zone {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            /* 保持較小的 padding */
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        .zone-border-right {
+            border-right: 1px dashed #cbd5e1;
+        }
+
+        .zone-label {
+            font-weight: bold;
+            color: #334155;
+            font-size: 11px;
+            margin-bottom: 6px;
+            text-align: center;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 2px;
+        }
+        
+        @media (min-width: 640px) {
+            .zone-label { 
+                font-size: 14px; 
+                writing-mode: horizontal-tb;
+                letter-spacing: normal;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .zone-label { font-size: 18px; }
+        }
+
+        .zone-tick {
+            font-size: 10px;
+            color: #94a3b8;
+            position: absolute;
+            bottom: 4px;
+            right: -10px;
+            background-color: var(--white);
+            padding: 0 2px;
+            z-index: 10;
+            border-radius: 2px;
+        }
+
+        /* 區域顏色 */
+        .bg-low { background-color: #f3e8ff; }
+        .bg-border { background-color: #fef9c3; }
+        .bg-low-avg { background-color: #ecfdf5; }
+        .bg-avg { background-color: #eff6ff; }
+        .bg-high-avg { background-color: #ecfdf5; }
+        .bg-superior { background-color: #fef9c3; }
+        .bg-very-superior { background-color: #f3e8ff; }
+
+        /* SVG */
+        .svg-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        /* 線條 */
+        .line-indicator {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 4px;
+            z-index: 30;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .transition-line {
+            transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s;
+        }
+
+        .multi-line {
+            width: 4px;
+            position: absolute;
+            top: 0; bottom: 0;
+            opacity: 0.8;
+            transition: left 0.5s ease-out;
+        }
+
+        .hidden { display: none !important; }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+    </style>
+    <!-- 強制禁止縮放的 JS -->
+    <script>
+        // 禁止雙指縮放 (Gesture)
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+        
+        // 禁止雙擊縮放 (Double Tap)
+        // 雖然 meta viewport 已盡力，但這是雙保險
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</head>
+<body>
+
+    <!-- 頂部控制面板 -->
+    <div class="control-panel">
+        <div id="panelContent" class="panel-content">
+            
+            <!-- VCI -->
+            <div class="control-group" id="group-0">
+                <div class="color-selector" style="background-color: var(--col-vci);" onclick="selectField(0, false)"></div>
+                <div class="input-item">
+                    <label class="input-label" onclick="selectField(0)">言語理解（VCI）</label>
+                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="vci" value="77" 
+                            class="custom-input"
+                            style="border-color: var(--col-vci); color: var(--col-vci);"
+                            onfocus="selectField(0)" oninput="handleInput(0)">
+                </div>
+            </div>
+
+            <!-- PRI -->
+            <div class="control-group" id="group-1">
+                <div class="color-selector" style="background-color: var(--col-pri);" onclick="selectField(1, false)"></div>
+                <div class="input-item">
+                    <label class="input-label" onclick="selectField(1)">知覺推理（PRI）</label>
+                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="pri" value="121" 
+                            class="custom-input"
+                            style="border-color: var(--col-pri); color: var(--col-pri);"
+                            onfocus="selectField(1)" oninput="handleInput(1)">
+                </div>
+            </div>
+
+            <!-- WMI -->
+            <div class="control-group" id="group-2">
+                <div class="color-selector" style="background-color: var(--col-wmi);" onclick="selectField(2, false)"></div>
+                <div class="input-item">
+                    <label class="input-label" onclick="selectField(2)">工作記憶（WMI）</label>
+                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="wmi" value="87" 
+                            class="custom-input"
+                            style="border-color: var(--col-wmi); color: var(--col-wmi);"
+                            onfocus="selectField(2)" oninput="handleInput(2)">
+                </div>
+            </div>
+
+            <!-- PSI -->
+            <div class="control-group" id="group-3">
+                <div class="color-selector" style="background-color: var(--col-psi);" onclick="selectField(3, false)"></div>
+                <div class="input-item">
+                    <label class="input-label" onclick="selectField(3)">處理速度（PSI）</label>
+                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="psi" value="79" 
+                            class="custom-input"
+                            style="border-color: var(--col-psi); color: var(--col-psi);"
+                            onfocus="selectField(3)" oninput="handleInput(3)">
+                </div>
+            </div>
+
+            <!-- FSIQ -->
+            <div class="control-group" id="group-4">
+                <div class="color-selector" style="background-color: var(--col-fsiq);" onclick="selectField(4, false)"></div>
+                <div class="input-item">
+                    <label class="input-label" onclick="selectField(4)">總智商（FSIQ）</label>
+                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="fsiq" value="99" 
+                            class="custom-input"
+                            style="border-color: var(--col-fsiq); color: var(--col-fsiq);"
+                            onfocus="selectField(4)" oninput="handleInput(4)">
+                </div>
+            </div>
+
+            <!-- 分隔符號 -->
+            <div class="divider"></div>
+
+            <!-- 功能按鈕區 -->
+            <div class="btn-wrapper">
+                <button id="btnHide" onclick="toggleHideInput()" class="btn btn-toggle" title="隱藏數值">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg>
+                </button>
+
+                <button id="btnShowAll" onclick="toggleShowAll()" class="btn btn-toggle" title="顯示全部線條">
+                    全部
+                </button>
+            </div>
+
+            <div class="nav-btns">
+                <button onclick="navigate(-1)" class="btn-nav">◀</button>
+                <button onclick="navigate(1)" class="btn-nav">▶</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 主要顯示標題 -->
+    <div id="mainTitleContainer" class="title-container">
+        <div id="mainTitle" class="main-title" style="background-color: #dbeafe; color: #3b82f6; border-color: #bfdbfe;">
+            言語理解（VCI） : 77
+        </div>
+    </div>
+
+    <!-- 圖表區域 -->
+    <div class="chart-container">
+        <div class="bg-layer">
+            <div class="zone bg-low zone-border-right" style="width: 16.66%"><span class="zone-label">低弱</span><span class="zone-tick">70</span></div>
+            <div class="zone bg-border zone-border-right" style="width: 11.11%"><span class="zone-label">有限</span><span class="zone-tick">80</span></div>
+            <div class="zone bg-low-avg zone-border-right" style="width: 11.11%"><span class="zone-label">中下</span><span class="zone-tick">90</span></div>
+            <div class="zone bg-avg zone-border-right" style="width: 22.22%"><span class="zone-label">中等</span><span class="zone-tick">110</span></div>
+            <div class="zone bg-high-avg zone-border-right" style="width: 11.11%"><span class="zone-label">中上</span><span class="zone-tick">120</span></div>
+            <div class="zone bg-superior zone-border-right" style="width: 11.11%"><span class="zone-label">優異</span><span class="zone-tick">130</span></div>
+            <div class="zone bg-very-superior" style="width: 16.66%"><span class="zone-label">特優</span></div>
+        </div>
+        <div class="svg-layer">
+            <svg viewBox="0 0 100 50" preserveAspectRatio="none" style="width: 100%; height: 92%; opacity: 0.9;">
+                <path d="M0,50 C20,50 35,5 50,5 C65,5 80,50 100,50" fill="none" stroke="#64748b" stroke-width="0.8" vector-effect="non-scaling-stroke" />
+            </svg>
+        </div>
+        <div id="activeLine" class="line-indicator transition-line" style="left: 50%; background-color: var(--col-vci);"></div>
+        <div id="allLinesContainer" class="absolute inset-0 hidden" style="position:absolute; top:0; bottom:0; left:0; right:0; z-index:20; pointer-events:none;"></div>
+    </div>
+
+    <script>
+        const fields = [
+            { id: 'vci', label: '言語理解（VCI）', color: '#3b82f6', bgColor: '#dbeafe', borderColor: '#bfdbfe' },
+            { id: 'pri', label: '知覺推理（PRI）', color: '#10b981', bgColor: '#d1fae5', borderColor: '#a7f3d0' },
+            { id: 'wmi', label: '工作記憶（WMI）', color: '#f59e0b', bgColor: '#fef3c7', borderColor: '#fde68a' },
+            { id: 'psi', label: '處理速度（PSI）', color: '#8b5cf6', bgColor: '#ede9fe', borderColor: '#ddd6fe' },
+            { id: 'fsiq', label: '總智商（FSIQ）', color: '#ef4444', bgColor: '#fee2e2', borderColor: '#fecaca' }
+        ];
+
+        let currentIndex = 0;
+        let isShowAllMode = false;
+        let isHideValuesMode = false;
+        const MIN_SCORE = 55;
+        const MAX_SCORE = 145;
+
+        function init() {
+            const container = document.getElementById('allLinesContainer');
+            fields.forEach((field, idx) => {
+                const line = document.createElement('div');
+                line.className = 'multi-line';
+                line.style.backgroundColor = field.color;
+                line.id = `line-${idx}`;
+                container.appendChild(line);
+            });
+
+            updateUI(false);
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') navigate(1);
+                if (e.key === 'ArrowLeft') navigate(-1);
+            });
+        }
+
+        function handleInput(index) {
+            updateUI(false);
+        }
+
+        function navigate(direction) {
+            if (isShowAllMode) return;
+            currentIndex += direction;
+            if (currentIndex >= fields.length) currentIndex = 0;
+            if (currentIndex < 0) currentIndex = fields.length - 1;
+            updateUI(false);
+        }
+
+        function selectField(index, shouldFocus = true) {
+            if (isShowAllMode) return;
+            currentIndex = index;
+            updateUI(shouldFocus); 
+        }
+
+        function toggleHideInput() {
+            isHideValuesMode = !isHideValuesMode;
+            const btn = document.getElementById('btnHide');
+            const panel = document.getElementById('panelContent');
+            
+            if (isHideValuesMode) {
+                btn.classList.add('active');
+                panel.classList.add('hide-values');
+            } else {
+                btn.classList.remove('active');
+                panel.classList.remove('hide-values');
+            }
+        }
+
+        function toggleShowAll() {
+            isShowAllMode = !isShowAllMode;
+            const btn = document.getElementById('btnShowAll');
+            const titleContainer = document.getElementById('mainTitleContainer');
+            
+            if (isShowAllMode) {
+                btn.classList.add('active');
+                titleContainer.style.opacity = '0';
+                titleContainer.style.height = '0';
+                titleContainer.style.marginBottom = '0';
+            } else {
+                btn.classList.remove('active');
+                titleContainer.style.opacity = '1';
+                titleContainer.style.height = '48px';
+                titleContainer.style.marginBottom = '12px';
+            }
+            updateUI(false);
+        }
+
+        function updateUI(shouldFocus = true) {
+            const values = fields.map(f => {
+                let v = parseInt(document.getElementById(f.id).value);
+                return isNaN(v) ? 100 : v;
+            });
+
+            const activeLine = document.getElementById('activeLine');
+            const allLinesContainer = document.getElementById('allLinesContainer');
+
+            if (isShowAllMode) {
+                activeLine.classList.add('hidden');
+                allLinesContainer.classList.remove('hidden');
+                values.forEach((val, idx) => {
+                    moveLine(`line-${idx}`, val);
+                });
+            } else {
+                activeLine.classList.remove('hidden');
+                allLinesContainer.classList.add('hidden');
+
+                const currentField = fields[currentIndex];
+                const currentVal = values[currentIndex];
+
+                const titleEl = document.getElementById('mainTitle');
+                titleEl.innerText = `${currentField.label} : ${currentVal}`;
+                titleEl.style.backgroundColor = currentField.bgColor;
+                titleEl.style.color = currentField.color;
+                titleEl.style.borderColor = currentField.borderColor;
+
+                activeLine.style.backgroundColor = currentField.color;
+                moveLine('activeLine', currentVal);
+
+                fields.forEach((f, idx) => {
+                    const group = document.getElementById(`group-${idx}`);
+                    const inputEl = document.getElementById(f.id);
+                    
+                    if (idx === currentIndex) {
+                        group.classList.add('active-group');
+                        inputEl.style.zIndex = '10';
+                        if (shouldFocus) {
+                             inputEl.focus();
+                        }
+                    } else {
+                        group.classList.remove('active-group');
+                        inputEl.style.zIndex = '1';
+                    }
+                });
+            }
+        }
+
+        function moveLine(lineId, score) {
+            let percentage = ((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)) * 100;
+            if (percentage < 0) percentage = 0;
+            if (percentage > 100) percentage = 100;
+
+            const line = document.getElementById(lineId);
+            if (line) {
+                line.style.left = `${percentage}%`;
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
